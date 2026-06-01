@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net (Pillar 1)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'ramilathapa227@gmail.com' ||
+        request.auth.token.email == 'nabin123thapa4@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\\\-]+$');
+    }
+
+    // Message validation helper
+    function isValidMessage(data) {
+      return data.keys().hasAll(['id', 'name', 'phone', 'email', 'service', 'message', 'createdAt'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.phone is string && data.phone.size() > 0 && data.phone.size() <= 24
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 128
+        && data.service is string && data.service.size() > 0 && data.service.size() <= 100
+        && data.message is string && data.message.size() <= 1000
+        && data.createdAt is string;
+    }
+
+    // Booking validation helper
+    function isValidBooking(data) {
+      return data.keys().hasAll(['id', 'patientName', 'patientEmail', 'patientPhone', 'serviceId', 'dentistId', 'date', 'timeSlot', 'status', 'createdAt'])
+        && data.keys().size() >= 10
+        && data.id is string && data.id.size() <= 128
+        && data.patientName is string && data.patientName.size() > 0 && data.patientName.size() <= 100
+        && data.patientEmail is string && data.patientEmail.size() > 0 && data.patientEmail.size() <= 128
+        && data.patientPhone is string && data.patientPhone.size() > 0 && data.patientPhone.size() <= 24
+        && data.serviceId is string && data.serviceId.size() <= 128
+        && data.dentistId is string && data.dentistId.size() <= 128
+        && data.date is string && data.date.size() <= 32
+        && data.timeSlot is string && data.timeSlot.size() <= 32
+        && data.status is string && (data.status == 'confirmed' || data.status == 'pending' || data.status == 'cancelled' || data.status == 'canceled')
+        && data.createdAt is string;
+    }
+
+    // Collection: Messages
+    match /messages/{messageId} {
+      allow create: if isValidId(messageId) && isValidMessage(request.resource.data);
+      
+      // Messages are highly private, only signed-in administrators can query/read them
+      allow get, list, update, delete: if isAdmin();
+    }
+
+    // Collection: Bookings
+    match /bookings/{bookingId} {
+      allow create: if isValidId(bookingId) && isValidBooking(request.resource.data);
+      
+      // Let patients read or manage their booking if:
+      // 1. They are the authenticated account owner who created it (using the optional userId)
+      // 2. OR they are signed in as the admin
+      // 3. OR for public access, they can query specific bookings matching their email
+      allow get: if true; // Let users check their booking detail if they have the ID
+      
+      allow list: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid ||
+        resource.data.patientEmail == request.auth.token.email
+      );
+
+      allow update: if isValidBooking(request.resource.data) && (
+        // Let admins update any status
+        isAdmin() ||
+        // Let verified owner cancel/edit their booking
+        (resource.data.patientEmail == request.resource.data.patientEmail && (
+          // verify same user
+          (isSignedIn() && resource.data.userId == request.auth.uid) ||
+          // Public user can update status to 'cancelled'
+          (request.resource.data.status == 'cancelled' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+        ))
+      );
+
+      allow delete: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+  }
+}

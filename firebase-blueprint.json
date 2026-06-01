@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "Message": {
+      "title": "Message",
+      "description": "Contact inquiry submitted via the booking/contact form",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "service": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "phone",
+        "email",
+        "service",
+        "message",
+        "createdAt"
+      ]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A scheduled dental appointment details",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "patientName": {
+          "type": "string"
+        },
+        "patientEmail": {
+          "type": "string",
+          "format": "email"
+        },
+        "patientPhone": {
+          "type": "string"
+        },
+        "serviceId": {
+          "type": "string"
+        },
+        "dentistId": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "timeSlot": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "confirmed",
+            "cancelled"
+          ]
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "patientName",
+        "patientEmail",
+        "patientPhone",
+        "serviceId",
+        "dentistId",
+        "date",
+        "timeSlot",
+        "status",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "messages": {
+      "schema": "Message",
+      "description": "Contact form submissions from patients"
+    },
+    "bookings": {
+      "schema": "Booking",
+      "description": "Client scheduled dental appointments"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "DentalDemoByNabin",
+  "description": "A premium, fully responsive dental clinic website featuring comprehensive services, an interactive before-and-after smile transformation slider, team specialists, patient reviews, and an interactive appointment booking system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
